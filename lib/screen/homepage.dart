@@ -1,0 +1,178 @@
+import 'package:dating_chef/screen/detailstable.dart';
+import 'package:dating_chef/service/api.dart';
+import 'package:dating_chef/service/model.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+class Homepage extends StatefulWidget {
+  const Homepage({super.key});
+
+  @override
+  State<Homepage> createState() => _HomepageState();
+}
+
+class _HomepageState extends State<Homepage> {
+  List<Order> _product = [];
+  bool isLoading = true;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _fetchFood();
+  }
+
+  Future<void> _fetchFood() async {
+    try {
+      final product = await fetchFoodOrder();
+      setState(() {
+        isLoading = false;
+        _product = product;
+      });
+    } catch (error) {
+      // Handle error
+      print('Error fetching products: $error');
+    }
+  }
+
+  Future<void> _updateTable(String uid) async {
+    try {
+      await updateTableEntry(uid);
+    } catch (error) {
+      print('Error updating table entry: $error');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+    final width = MediaQuery.of(context).size.width;
+    return Scaffold(
+      backgroundColor: const Color(0xfff2f2f2),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: const Color(0xfffe813a),
+        title: const Center(
+          child: Text(
+            "Dating Chef",
+            style: TextStyle(
+                color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+      body: isLoading
+          ? const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              ],
+            )
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(left: 10, right: 10),
+                    height: height / 1.2,
+                    width: width,
+                    decoration: const BoxDecoration(),
+                    child: ListView.separated(
+                      separatorBuilder: (BuildContext context, int index) {
+                        return const SizedBox(
+                            height: 10); // Adjust the height as needed
+                      },
+                      padding: const EdgeInsets.only(top: 10),
+                      itemCount: _product.length,
+                      itemBuilder: (context, index) {
+                        if (_product.isNotEmpty) {
+                          var order = _product[index];
+                          if (order.products.isNotEmpty) {
+                            return Dismissible(
+                              key: Key(index.toString()),
+                              onDismissed: (direction) {
+                                _updateTable(order.uid);
+                              },
+                              background: Container(
+                                padding: const EdgeInsets.only(right: 20),
+                                decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: const Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Icon(
+                                    Icons.done,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
+                              child: InkWell(
+                                onTap: () {
+                                  Get.to(DetailsTable(
+                                    table: order.table,
+                                    order: order.products,
+                                  ));
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.only(
+                                      left: 10, right: 10),
+                                  height: height / 14,
+                                  width: width,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xfffe813a),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        "Table",
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Container(
+                                        height: 35,
+                                        width: 100,
+                                        decoration: const BoxDecoration(
+                                            color: Colors.white),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              "${order.table}",
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                color: Color(0xfffe813a),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                        return const SizedBox(); // Return an empty SizedBox if there's no data
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
